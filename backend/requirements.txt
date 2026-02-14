@@ -5,7 +5,8 @@ beanie
 python-dotenv
 pydantic
 pydantic-settings
-passlib[bcrypt]
+passlib[argon2]
 python-jose[cryptography]
 python-multipart
 email-validator
+argon2-cffi
