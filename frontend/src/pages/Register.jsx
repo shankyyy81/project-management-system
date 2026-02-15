@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Register() {
     const navigate = useNavigate();
@@ -62,33 +62,65 @@ export default function Register() {
     };
 
     return (
-        <div style={{ maxWidth: '500px', margin: '2rem auto', padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: 'var(--box-shadow)' }}>
-            <h2>Register</h2>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <input name="full_name" placeholder="Full Name" onChange={handleChange} required style={{ padding: '0.5rem' }} />
-                <input name="email" type="email" placeholder="Email" onChange={handleChange} required style={{ padding: '0.5rem' }} />
-                <input name="password" type="password" placeholder="Password" onChange={handleChange} required style={{ padding: '0.5rem' }} />
+        <div className="container flex-center" style={{ minHeight: '90vh', padding: '2rem 0' }}>
+            <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
+                <h2 className="text-center mb-4">Create Account</h2>
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label className="form-label">Full Name</label>
+                        <input name="full_name" className="form-control" placeholder="John Doe" onChange={handleChange} required />
+                    </div>
 
-                <select name="role" onChange={handleChange} value={formData.role} style={{ padding: '0.5rem' }}>
-                    <option value="STUDENT">Student</option>
-                    <option value="FACULTY">Faculty</option>
-                </select>
+                    <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
+                        <div className="form-group">
+                            <label className="form-label">Email</label>
+                            <input name="email" type="email" className="form-control" placeholder="john@example.com" onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Password</label>
+                            <input name="password" type="password" className="form-control" placeholder="********" onChange={handleChange} required />
+                        </div>
+                    </div>
 
-                <input name="department" placeholder="Department" onChange={handleChange} required style={{ padding: '0.5rem' }} />
+                    <div className="form-group">
+                        <label className="form-label">Role</label>
+                        <select name="role" className="form-control" onChange={handleChange} value={formData.role}>
+                            <option value="STUDENT">Student</option>
+                            <option value="FACULTY">Faculty</option>
+                        </select>
+                    </div>
 
-                {formData.role === 'FACULTY' ? (
-                    <input name="interests" placeholder="Interests (comma separated)" onChange={handleChange} style={{ padding: '0.5rem' }} />
-                ) : (
-                    <>
-                        <input name="year" placeholder="Year" onChange={handleChange} required style={{ padding: '0.5rem' }} />
-                        <input name="skills" placeholder="Skills (comma separated)" onChange={handleChange} style={{ padding: '0.5rem' }} />
-                    </>
-                )}
+                    <div className="form-group">
+                        <label className="form-label">Department</label>
+                        <input name="department" className="form-control" placeholder="Computer Science" onChange={handleChange} required />
+                    </div>
 
-                <button type="submit" style={{ padding: '0.5rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px' }}>
-                    Register
-                </button>
-            </form>
+                    {formData.role === 'FACULTY' ? (
+                        <div className="form-group">
+                            <label className="form-label">Interests (comma separated)</label>
+                            <input name="interests" className="form-control" placeholder="AI, Data Science, Social Good" onChange={handleChange} />
+                        </div>
+                    ) : (
+                        <>
+                            <div className="form-group">
+                                <label className="form-label">Year</label>
+                                <input name="year" className="form-control" placeholder="3rd Year" onChange={handleChange} required />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Skills (comma separated)</label>
+                                <input name="skills" className="form-control" placeholder="Python, React, ML" onChange={handleChange} />
+                            </div>
+                        </>
+                    )}
+
+                    <button type="submit" className="btn btn-primary btn-block mt-4">
+                        Register
+                    </button>
+                </form>
+                <div className="text-center mt-4 text-muted">
+                    Already have an account? <Link to="/login" style={{ color: 'var(--primary)' }}>Login</Link>
+                </div>
+            </div>
         </div>
     );
 }

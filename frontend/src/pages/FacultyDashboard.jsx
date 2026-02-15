@@ -23,46 +23,36 @@ export default function FacultyDashboard() {
 
     const activeProjectsCount = projects.filter(p => p.status !== 'Completed').length;
 
-    if (loading) return <div>Loading projects...</div>;
+    if (loading) return <div className="text-center mt-8">Loading projects...</div>;
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div className="flex-center justify-between mb-4">
                 <h2>My Projects ({activeProjectsCount}/5 Active)</h2>
                 {activeProjectsCount < 5 ? (
-                    <Link to="/project/new" className="button" style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: 'var(--primary-color)',
-                        color: 'white',
-                        borderRadius: '4px',
-                        textDecoration: 'none'
-                    }}>
+                    <Link to="/project/new" className="btn btn-primary">
                         Create New Project
                     </Link>
                 ) : (
-                    <span style={{ color: 'var(--secondary-color)' }}>Max projects reached</span>
+                    <span className="text-muted">Max projects reached</span>
                 )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+            <div className="grid grid-cols-1 grid-cols-2 grid-cols-3">
                 {projects.map(project => (
-                    <div key={project._id} style={{
-                        padding: '1rem',
-                        backgroundColor: 'white',
-                        borderRadius: '8px',
-                        boxShadow: 'var(--box-shadow)',
-                        borderLeft: `4px solid ${project.status === 'Completed' ? 'var(--success)' : 'var(--primary-color)'}`
+                    <div key={project._id} className="card card-hover" style={{
+                        borderLeft: `4px solid ${project.status === 'Completed' ? 'var(--success)' : 'var(--primary)'}`
                     }}>
                         <h3>{project.title}</h3>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--secondary-color)' }}>Status: {project.status}</p>
-                        <div style={{ marginTop: '0.5rem' }}>
+                        <p className="text-muted" style={{ fontSize: '0.9rem' }}>Status: {project.status}</p>
+                        <div className="mt-2">
                             <strong>SDGs:</strong>
-                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                            <div className="d-flex gap-2 mt-1" style={{ flexWrap: 'wrap' }}>
                                 {Object.values(project.sdg_mapping).map((sdg, idx) => (
                                     <span key={idx} style={{
                                         fontSize: '0.8rem',
-                                        backgroundColor: '#e0f2fe',
-                                        color: '#0369a1',
+                                        backgroundColor: 'var(--primary-light)',
+                                        color: 'var(--primary-hover)',
                                         padding: '0.25rem 0.5rem',
                                         borderRadius: '12px'
                                     }}>
@@ -76,9 +66,9 @@ export default function FacultyDashboard() {
             </div>
 
             {projects.length === 0 && (
-                <p style={{ textAlign: 'center', color: 'var(--secondary-color)', marginTop: '2rem' }}>
-                    No projects found. Start by creating one!
-                </p>
+                <div className="text-center mt-8 text-muted">
+                    <p>No projects found. Start by creating one!</p>
+                </div>
             )}
         </div>
     );

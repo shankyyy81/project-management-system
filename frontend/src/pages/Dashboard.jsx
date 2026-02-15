@@ -8,8 +8,8 @@ export default function Dashboard() {
     if (!user) return null;
 
     return (
-        <div style={{ padding: '2rem' }}>
-            <h1>Dashboard</h1>
+        <div className="container" style={{ paddingBottom: '2rem' }}>
+            <h1 className="mb-4">Dashboard</h1>
             {user.role === 'FACULTY' ? (
                 <FacultyDashboard />
             ) : (
