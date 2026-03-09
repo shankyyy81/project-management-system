@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
     createProjectTask,
     getProjectWorkspace,
     updateProjectTask,
     getProjectChat,
-    postProjectChat
+    postProjectChat,
+    uploadAttachment,
+    deleteAttachment,
+    downloadAttachment,
 } from '../api/projects';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,6 +34,9 @@ export default function ProjectWorkspace() {
         description: '',
         status: 'TODO'
     });
+    // attachment upload state: { [taskId]: { uploading: bool, error: string } }
+    const [attachState, setAttachState] = useState({});
+    const fileInputRefs = useRef({});
 
     useEffect(() => {
         loadWorkspace();
@@ -114,6 +120,47 @@ export default function ProjectWorkspace() {
         } catch (err) {
             setError(err.message || 'Failed to update task');
         }
+    };
+
+    const handleUpload = async (taskId, file) => {
+        if (!file) return;
+        setAttachState((prev) => ({ ...prev, [taskId]: { uploading: true, error: '' } }));
+        try {
+            const newAtt = await uploadAttachment(projectId, taskId, file);
+            setWorkspace((prev) => ({
+                ...prev,
+                tasks: prev.tasks.map((t) =>
+                    t.id === taskId
+                        ? { ...t, attachments: [...(t.attachments || []), newAtt] }
+                        : t
+                ),
+            }));
+            setAttachState((prev) => ({ ...prev, [taskId]: { uploading: false, error: '' } }));
+        } catch (err) {
+            setAttachState((prev) => ({ ...prev, [taskId]: { uploading: false, error: err.message } }));
+        }
+    };
+
+    const handleDeleteAttachment = async (taskId, attachmentId) => {
+        try {
+            await deleteAttachment(projectId, taskId, attachmentId);
+            setWorkspace((prev) => ({
+                ...prev,
+                tasks: prev.tasks.map((t) =>
+                    t.id === taskId
+                        ? { ...t, attachments: (t.attachments || []).filter((a) => a.id !== attachmentId) }
+                        : t
+                ),
+            }));
+        } catch (err) {
+            setError(err.message || 'Failed to delete attachment');
+        }
+    };
+
+    const formatBytes = (bytes) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     };
 
     const handleSendMessage = async (e) => {
@@ -242,6 +289,71 @@ export default function ProjectWorkspace() {
                                                 <option key={col.key} value={col.key}>{col.label}</option>
                                             ))}
                                         </select>
+                                    </div>
+
+                                    {/* ── Attachments ── */}
+                                    <div className="task-attachments">
+                                        {(task.attachments || []).length > 0 && (
+                                            <ul className="attachment-list">
+                                                {(task.attachments || []).map((att) => (
+                                                    <li key={att.id} className="attachment-item">
+                                                        <span className="attachment-icon">📄</span>
+                                                        <span
+                                                            className="attachment-name"
+                                                            title={att.original_name}
+                                                        >
+                                                            {att.original_name.length > 24
+                                                                ? att.original_name.slice(0, 22) + '…'
+                                                                : att.original_name}
+                                                        </span>
+                                                        <span className="attachment-size">
+                                                            {formatBytes(att.size_bytes)}
+                                                        </span>
+                                                        <button
+                                                            className="attachment-btn download"
+                                                            title="Download"
+                                                            onClick={() =>
+                                                                downloadAttachment(
+                                                                    projectId, task.id,
+                                                                    att.id, att.original_name
+                                                                )
+                                                            }
+                                                        >⬇</button>
+                                                        <button
+                                                            className="attachment-btn delete"
+                                                            title="Delete"
+                                                            onClick={() =>
+                                                                handleDeleteAttachment(task.id, att.id)
+                                                            }
+                                                        >🗑</button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            style={{ display: 'none' }}
+                                            ref={(el) => { fileInputRefs.current[task.id] = el; }}
+                                            onChange={(e) => {
+                                                handleUpload(task.id, e.target.files[0]);
+                                                e.target.value = '';
+                                            }}
+                                        />
+                                        <button
+                                            className="attachment-upload-btn"
+                                            type="button"
+                                            disabled={attachState[task.id]?.uploading}
+                                            onClick={() => fileInputRefs.current[task.id]?.click()}
+                                        >
+                                            {attachState[task.id]?.uploading ? '⏳ Uploading…' : '📎 Attach file'}
+                                        </button>
+                                        {attachState[task.id]?.error && (
+                                            <div style={{ color: 'var(--color-error)', fontSize: '0.8rem', marginTop: '4px' }}>
+                                                {attachState[task.id].error}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))

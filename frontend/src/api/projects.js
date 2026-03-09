@@ -127,3 +127,57 @@ export const postProjectChat = async (projectId, payload) => {
     }
     return response.json();
 };
+
+// ── Attachments ──────────────────────────────────────────────
+
+const API_URL = 'http://localhost:8000';
+
+export const uploadAttachment = async (projectId, taskId, file) => {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(
+        `${API_URL}/projects/${projectId}/tasks/${taskId}/attachments`,
+        {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: formData,
+        }
+    );
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || 'Upload failed');
+    }
+    return response.json();
+};
+
+export const deleteAttachment = async (projectId, taskId, attachmentId) => {
+    const response = await fetchClient(
+        `/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}`,
+        { method: 'DELETE' }
+    );
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || 'Delete failed');
+    }
+    return response.json();
+};
+
+export const downloadAttachment = async (projectId, taskId, attachmentId, originalName) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(
+        `${API_URL}/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
+    if (!response.ok) throw new Error('Download failed');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = originalName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
