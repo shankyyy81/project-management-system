@@ -6,6 +6,10 @@ import {
     updateProjectTask,
     getProjectChat,
     postProjectChat,
+    queryRagAnswer,
+    listLiteratureDocuments,
+    uploadLiteratureDocument,
+    downloadLiteratureDocument,
     uploadAttachment,
     deleteAttachment,
     downloadAttachment,
@@ -29,6 +33,11 @@ export default function ProjectWorkspace() {
     const [chatText, setChatText] = useState('');
     const [chatSending, setChatSending] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [ragQuery, setRagQuery] = useState('');
+    const [ragAnswer, setRagAnswer] = useState('');
+    const [ragLoading, setRagLoading] = useState(false);
+    const [ragDocs, setRagDocs] = useState([]);
+    const [ragUploadLoading, setRagUploadLoading] = useState(false);
     const [newTask, setNewTask] = useState({
         title: '',
         description: '',
@@ -55,6 +64,18 @@ export default function ProjectWorkspace() {
         loadChat();
         intervalId = setInterval(loadChat, 5000);
         return () => clearInterval(intervalId);
+    }, [projectId]);
+
+    useEffect(() => {
+        const loadLiteratureDocs = async () => {
+            try {
+                const docs = await listLiteratureDocuments(projectId);
+                setRagDocs(docs);
+            } catch {
+                setRagDocs([]);
+            }
+        };
+        loadLiteratureDocs();
     }, [projectId]);
 
     const loadWorkspace = async () => {
@@ -179,6 +200,41 @@ export default function ProjectWorkspace() {
         }
     };
 
+    const handleAskRag = async (e) => {
+        e.preventDefault();
+        const question = ragQuery.trim();
+        if (!question) return;
+
+        setRagLoading(true);
+        setRagAnswer('');
+        setError('');
+        try {
+            const answer = await queryRagAnswer(projectId, question, 4);
+            setRagAnswer(answer);
+        } catch (err) {
+            setError(err.message || 'Failed to get AI answer');
+        } finally {
+            setRagLoading(false);
+        }
+    };
+
+    const handleLiteratureUpload = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        setRagUploadLoading(true);
+        setError('');
+        try {
+            await uploadLiteratureDocument(projectId, file);
+            const docs = await listLiteratureDocuments(projectId);
+            setRagDocs(docs);
+        } catch (err) {
+            setError(err.message || 'Failed to upload literature document');
+        } finally {
+            setRagUploadLoading(false);
+        }
+    };
+
     if (loading) return <div className="text-center mt-8">Loading workspace...</div>;
     if (!workspace) return <div className="text-center mt-8">Workspace unavailable.</div>;
 
@@ -211,6 +267,59 @@ export default function ProjectWorkspace() {
                     <span>In Progress: {progress.inProgress}%</span>
                     <span>Total Tasks: {(workspace.tasks || []).length}</span>
                 </div>
+            </div>
+
+            <div className="card mb-4">
+                <h3 style={{ fontSize: '1.2rem' }}>AI RAG Assistant</h3>
+                <div className="mb-3">
+                    <label className="form-label">Upload literature file (PDF/TXT/MD)</label>
+                    <input
+                        type="file"
+                        className="form-control"
+                        accept=".pdf,.txt,.md"
+                        onChange={handleLiteratureUpload}
+                        disabled={ragUploadLoading}
+                    />
+                    <div className="text-muted" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                        {ragUploadLoading ? 'Indexing document...' : `Indexed documents: ${ragDocs.length}`}
+                    </div>
+                    {ragDocs.length > 0 && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                            {ragDocs.map((d) => (
+                                <div key={d.id} className="d-flex items-center gap-2" style={{ marginBottom: '0.35rem' }}>
+                                    <span className="text-muted" style={{ fontSize: '0.85rem' }}>{d.filename}</span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                                        onClick={() => downloadLiteratureDocument(projectId, d.id, d.filename)}
+                                    >
+                                        Download
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <form onSubmit={handleAskRag} className="mt-2">
+                    <div className="form-group">
+                        <label className="form-label">Ask for literature survey insights</label>
+                        <input
+                            className="form-control"
+                            value={ragQuery}
+                            onChange={(e) => setRagQuery(e.target.value)}
+                            placeholder="What methods are commonly used for this problem?"
+                        />
+                    </div>
+                    <button className="btn btn-primary" disabled={ragLoading || !ragQuery.trim() || ragDocs.length === 0}>
+                        {ragLoading ? 'Generating...' : 'Get Answer'}
+                    </button>
+                </form>
+                {ragAnswer && (
+                    <div className="mt-3" style={{ whiteSpace: 'pre-wrap' }}>
+                        {ragAnswer}
+                    </div>
+                )}
             </div>
 
             <div className="card mb-4">

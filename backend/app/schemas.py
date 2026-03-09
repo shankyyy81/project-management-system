@@ -104,3 +104,7 @@ class ProjectChatMessageView(BaseModel):
     sender_role: Optional[str] = None
     message: str
     created_at: datetime
+
+class RagQueryRequest(BaseModel):
+    query: str
+    top_k: int = 4
