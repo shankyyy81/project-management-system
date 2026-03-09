@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from typing import Annotated
+from typing import Annotated, List
 
 from app.core.config import settings
 from app.core.security import verify_password, get_password_hash, create_access_token
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas import UserCreate, Token, UserResponse
 
 router = APIRouter()
@@ -89,3 +89,21 @@ async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]
         faculty_profile=current_user.faculty_profile,
         student_profile=current_user.student_profile
     )
+
+@router.get("/students", response_model=List[UserResponse])
+async def list_students(current_user: Annotated[User, Depends(get_current_user)]):
+    if current_user.role != UserRole.FACULTY:
+        raise HTTPException(status_code=403, detail="Only Faculty can view students")
+
+    students = await User.find(User.role == UserRole.STUDENT).to_list()
+    return [
+        UserResponse(
+            id=str(s.id),
+            email=s.email,
+            full_name=s.full_name,
+            role=s.role,
+            faculty_profile=s.faculty_profile,
+            student_profile=s.student_profile
+        )
+        for s in students
+    ]

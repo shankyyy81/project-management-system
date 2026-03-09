@@ -4,22 +4,33 @@ import { createProject, analyzeSDG } from '../api/projects';
 
 export default function CreateProject() {
     const navigate = useNavigate();
+
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         title: '',
         problem_statement: '',
         sdg_mapping: {}
     });
-    const [analysisResults, setAnalysisResults] = useState(null);
+
+    const [analysisResults, setAnalysisResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // ===============================
+    // ANALYZE SDG
+    // ===============================
     const handleAnalyze = async () => {
         setLoading(true);
         setError('');
+
         try {
             const data = await analyzeSDG(formData.problem_statement);
-            setAnalysisResults(data.suggestions);
+
+            console.log("API Response:", data);
+
+            // ✅ FIXED FIELD NAME
+            setAnalysisResults(data.most_suitable_sdgs || []);
+
             setStep(2);
         } catch (err) {
             setError('Analysis failed. Please try again.');
@@ -28,12 +39,19 @@ export default function CreateProject() {
         }
     };
 
+    // ===============================
+    // CONFIRM SDG
+    // ===============================
     const handleConfirm = async (selectedSuggestion) => {
         const finalData = {
             title: formData.title,
             problem_statement: formData.problem_statement,
-            sdg_mapping: { [selectedSuggestion.sdg]: selectedSuggestion.sdg }, // Simplified mapping
-            ml_confidence_scores: { [selectedSuggestion.sdg]: selectedSuggestion.confidence }
+            sdg_mapping: {
+                [selectedSuggestion.sdg]: selectedSuggestion.sdg
+            },
+            ml_confidence_scores: {
+                [selectedSuggestion.sdg]: selectedSuggestion.confidence
+            }
         };
 
         try {
@@ -47,30 +65,43 @@ export default function CreateProject() {
     return (
         <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
             <div className="card" style={{ maxWidth: '800px', margin: '0 auto' }}>
+
                 <h2 className="mb-4">Create New Project</h2>
+
                 {error && <div className="alert alert-error">{error}</div>}
 
+                {/* ================= STEP 1 ================= */}
                 {step === 1 && (
                     <div className="flex-col gap-4">
+
                         <div className="form-group">
                             <label className="form-label">Project Title</label>
                             <input
                                 className="form-control"
                                 value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, title: e.target.value })
+                                }
                                 placeholder="E.g., Solar Powered Water Purification"
                             />
                         </div>
+
                         <div className="form-group">
                             <label className="form-label">Problem Statement</label>
                             <textarea
                                 className="form-control"
                                 value={formData.problem_statement}
-                                onChange={(e) => setFormData({ ...formData, problem_statement: e.target.value })}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        problem_statement: e.target.value
+                                    })
+                                }
                                 rows={6}
                                 placeholder="Describe the problem you are solving..."
                             />
                         </div>
+
                         <button
                             onClick={handleAnalyze}
                             disabled={!formData.title || !formData.problem_statement || loading}
@@ -78,23 +109,50 @@ export default function CreateProject() {
                         >
                             {loading ? 'Analyzing with SDG-BERT...' : 'Analyze for SDG Alignment'}
                         </button>
+
                     </div>
                 )}
 
-                {step === 2 && analysisResults && (
+                {/* ================= STEP 2 ================= */}
+                {step === 2 && (
                     <div>
+
                         <h3>AI Analysis Results</h3>
-                        <p className="text-muted">The system suggests the following SDGs based on your problem statement:</p>
+                        <p className="text-muted">
+                            The system suggests the following SDGs based on your problem statement:
+                        </p>
 
                         <div className="flex-col gap-4 mt-4">
+
+                            {/* ✅ SAFE RENDER */}
+                            {analysisResults.length === 0 && (
+                                <div>No suitable SDGs found.</div>
+                            )}
+
                             {analysisResults.map((suggestion, idx) => (
-                                <div key={idx} className="card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc' }}>
+                                <div
+                                    key={idx}
+                                    className="card"
+                                    style={{
+                                        padding: '1.5rem',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        backgroundColor: '#f8fafc'
+                                    }}
+                                >
+
                                     <div>
-                                        <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>{suggestion.sdg}</div>
+                                        <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
+                                            {suggestion.sdg}
+                                        </div>
+
+                                        {/* ✅ FIXED CONFIDENCE */}
                                         <div className="text-muted" style={{ fontSize: '0.9rem' }}>
-                                            Confidence: {(suggestion.confidence * 100).toFixed(1)}%
+                                            Confidence: {suggestion.confidence.toFixed(1)}%
                                         </div>
                                     </div>
+
                                     <button
                                         onClick={() => handleConfirm(suggestion)}
                                         className="btn btn-success"
@@ -102,8 +160,10 @@ export default function CreateProject() {
                                     >
                                         Confirm & Create
                                     </button>
+
                                 </div>
                             ))}
+
                         </div>
 
                         <button
@@ -112,6 +172,7 @@ export default function CreateProject() {
                         >
                             Back to Edit
                         </button>
+
                     </div>
                 )}
             </div>

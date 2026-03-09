@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { getMyProjects } from '../api/projects';
+import { useNavigate } from 'react-router-dom';
+import { getMyProjectsView } from '../api/projects';
 
 export default function StudentDashboard() {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadProjects();
@@ -11,7 +13,7 @@ export default function StudentDashboard() {
 
     const loadProjects = async () => {
         try {
-            const data = await getMyProjects();
+            const data = await getMyProjectsView();
             setProjects(data);
         } catch (error) {
             console.error(error);
@@ -32,19 +34,43 @@ export default function StudentDashboard() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 grid-cols-2 grid-cols-3 mt-4">
-                    {projects.map(project => (
-                        <div key={project._id} className="card card-hover" style={{ borderLeft: '4px solid var(--primary)' }}>
+                    {projects.map(project => {
+                        const projectId = project.id;
+                        const facultyName = project.faculty_name || project.faculty_id || 'N/A';
+                        const leaderName = project.leader_name || null;
+                        const memberNames = project.member_names || [];
+                        return (
+                        <div
+                            key={projectId}
+                            className="card card-hover"
+                            onClick={() => navigate(`/project/${projectId}/workspace`)}
+                            style={{ borderLeft: '4px solid var(--primary)' }}
+                        >
                             <h3>{project.title}</h3>
-                            <p><strong>Faculty:</strong> {project.faculty.id}</p>
+                            <p><strong>Faculty:</strong> {facultyName}</p>
                             <div className="mt-2 text-muted">
                                 <strong>Role:</strong> Project Member
                             </div>
+                            {(leaderName || memberNames.length > 0) && (
+                                <div className="mt-2">
+                                    <strong>Team:</strong>{' '}
+                                    {leaderName ? `Leader: ${leaderName}` : 'Leader: N/A'}
+                                    {memberNames.length > 0 && (
+                                        <span className="ml-2">
+                                            Members: {memberNames.join(', ')}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                             <div className="mt-2">
                                 <strong>SDGs:</strong>
                                 <span className="ml-2">{Object.values(project.sdg_mapping).join(', ')}</span>
                             </div>
+                            <div className="mt-2 text-muted" style={{ fontSize: '0.9rem' }}>
+                                Click to open workspace
+                            </div>
                         </div>
-                    ))}
+                    )})}
                 </div>
             )}
         </div>
